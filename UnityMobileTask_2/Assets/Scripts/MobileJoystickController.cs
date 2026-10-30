@@ -38,11 +38,16 @@ public class MobileJoystickController : MonoBehaviour
 
     private void LateUpdate()
     {
+        // Hiding selection/gameplay controls removes their synthetic gamepad.
+        if (leftControl != null && !leftControl.device.added) leftControl = null;
+        if (rightControl != null && !rightControl.device.added) rightControl = null;
         if (leftControl == null && leftStick != null)
             leftControl = leftStick.control as Vector2Control;
         if (rightControl == null && rightStick != null)
             rightControl = rightStick.control as Vector2Control;
 
+        if (leftControl != null && !leftControl.device.added) leftControl = null;
+        if (rightControl != null && !rightControl.device.added) rightControl = null;
         if (itemViewport == null || orbitCamera == null)
             return;
 

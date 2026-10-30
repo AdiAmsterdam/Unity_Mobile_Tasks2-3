@@ -1,6 +1,9 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+// Unity Input System manual: https://docs.unity3d.com/Packages/com.unity.inputsystem@1.19/manual/Sensors.html
+// LightSensor.lightLevel reports lux on supported Android hardware. Sensors start disabled.
+// Physical room lighting must be tested on an Android device; Windows/iOS do not expose this sensor.
 public class AmbientLightController : MonoBehaviour
 {
     [Header("Scene lighting")]

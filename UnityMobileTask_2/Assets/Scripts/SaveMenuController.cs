@@ -93,9 +93,17 @@ public class SaveMenuController : MonoBehaviour
             "Load Latest Auto Save",
             "Load Latest Auto-Save",
             new Vector2(0.5f, 1f),
-            new Vector2(0f, -105f),
-            new Vector2(520f, 52f));
+            new Vector2(-155f, -105f),
+            new Vector2(300f, 52f));
         latestAuto.onClick.AddListener(LoadLatestAutomatic);
+
+        Button backup = CreateButton(loadPanel.transform, "Load Auto Backup", "Previous Auto Backup",
+            new Vector2(0.5f, 1f), new Vector2(155f, -105f), new Vector2(300f, 52f));
+        backup.onClick.AddListener(() =>
+        {
+            if (SaveSystem.Instance != null && SaveSystem.Instance.LoadAutomaticBackup()) CloseMenus();
+            else statusText.text = "No previous valid auto-save backup exists yet.";
+        });
 
         CreateSlotScrollView(loadPanel.transform);
 
@@ -385,6 +393,7 @@ public class SaveMenuController : MonoBehaviour
 
         Text label = textObject.GetComponent<Text>();
         label.font = font;
+        label.raycastTarget = false; // Status text must not block selection buttons underneath.
         label.text = text;
         label.fontSize = fontSize;
         label.color = Color.white;

@@ -24,6 +24,7 @@ public class ItemViewportController : MonoBehaviour
     public Transform CurrentItemTransform => GetCurrentItem() != null ? GetCurrentItem().transform : null;
     public ItemData CurrentItemData => HasItems() && currentIndex >= 0 && currentIndex < items.Count ? items[currentIndex] : null;
     public string CurrentItemId => CurrentItemData != null ? CurrentItemData.GetId() : string.Empty;
+    public IReadOnlyList<ItemData> Items => items;
 
     private readonly List<GameObject> itemInstances = new List<GameObject>();
     private int currentIndex;
@@ -105,7 +106,7 @@ public class ItemViewportController : MonoBehaviour
         touchStartedOnCurrentItem = false;
     }
 
-    private void NextItem()
+    public void NextItem()
     {
         if (!HasItems())
             return;
@@ -114,7 +115,7 @@ public class ItemViewportController : MonoBehaviour
         DisplayItem(currentIndex);
     }
 
-    private void PreviousItem()
+    public void PreviousItem()
     {
         if (!HasItems())
             return;

@@ -45,7 +45,7 @@ public class GameManager : MonoBehaviour
         if (SaveSystem.AutosaveInterval <= 0f)
             return;
 
-        autosaveTimer += Time.unscaledDeltaTime;
+        autosaveTimer += Time.deltaTime; // Elapsed play time excludes the pause menu.
         if (autosaveTimer >= SaveSystem.AutosaveInterval)
         {
             autosaveTimer = 0f;

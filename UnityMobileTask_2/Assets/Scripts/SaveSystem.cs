@@ -13,6 +13,7 @@ public class SaveSystem : MonoBehaviour
     private const string FolderName = "SaveSlots";
     private const string AutosaveName = "autosave.json";
     private readonly HashSet<string> savesInProgress = new HashSet<string>();
+    private int manualSaveVersion;
 
     public string SaveFolder => Path.Combine(Application.persistentDataPath, FolderName);
 
@@ -35,11 +36,15 @@ public class SaveSystem : MonoBehaviour
 
         string key = "slot_" + slotNumber.ToString("00");
         if (savesInProgress.Add(key))
+        {
+            manualSaveVersion++;
             StartCoroutine(SaveRoutine(slotNumber, false, key));
+        }
     }
 
     public void SaveAutomatic()
     {
+        if (savesInProgress.Any(key => key != "autosave")) return;
         const string key = "autosave";
         if (savesInProgress.Add(key))
             StartCoroutine(SaveRoutine(0, true, key));
@@ -47,7 +52,13 @@ public class SaveSystem : MonoBehaviour
 
     private IEnumerator SaveRoutine(int slotNumber, bool automatic, string key)
     {
+        int version = manualSaveVersion;
         yield return new WaitForEndOfFrame();
+        if (automatic && version != manualSaveVersion)
+        {
+            savesInProgress.Remove(key);
+            yield break;
+        }
 
         Texture2D screenshot = ScreenCapture.CaptureScreenshotAsTexture();
         if (screenshot == null)
@@ -65,8 +76,8 @@ public class SaveSystem : MonoBehaviour
         try
         {
             Directory.CreateDirectory(SaveFolder);
-            SaveJsonWithBackup(GetJsonPath(slotNumber, automatic), JsonUtility.ToJson(data, true));
             File.WriteAllBytes(GetImagePath(slotNumber, automatic), imageBytes);
+            SaveJsonWithBackup(GetJsonPath(slotNumber, automatic), JsonUtility.ToJson(data, true));
         }
         catch (Exception exception)
         {
@@ -97,6 +108,13 @@ public class SaveSystem : MonoBehaviour
     public bool TryGetSave(int slotNumber, out SaveGameData data)
     {
         return TryReadSave(GetJsonPath(slotNumber, false), out data);
+    }
+
+    public bool LoadAutomaticBackup()
+    {
+        if (!TryReadJson(GetJsonPath(0, true) + ".bak", out SaveGameData data)) return false;
+        Apply(data);
+        return true;
     }
 
     public bool TryGetScreenshot(int slotNumber, out Texture2D texture)
@@ -224,7 +242,6 @@ public class SaveSystem : MonoBehaviour
         if (!hasFocus)
         {
             SaveCurrentStateImmediately();
-            SaveAutomatic();
         }
     }
 
@@ -233,8 +250,14 @@ public class SaveSystem : MonoBehaviour
         SaveCurrentStateImmediately();
     }
 
+    private void OnApplicationPause(bool paused)
+    {
+        if (paused) SaveCurrentStateImmediately();
+    }
+
     private void SaveCurrentStateImmediately()
     {
+        if (savesInProgress.Any(key => key != "autosave")) return;
         SaveGameData data = GameManager.Instance != null
             ? GameManager.Instance.CreateSaveData(0, true)
             : new SaveGameData { slotNumber = 0, isAutomaticSave = true, savedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") };

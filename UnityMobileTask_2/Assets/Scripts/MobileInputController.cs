@@ -1,6 +1,8 @@
 using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.EventSystems;
+using System.Collections.Generic;
 
 public class MobileInputController : MonoBehaviour
 {
@@ -77,6 +79,7 @@ public class MobileInputController : MonoBehaviour
 
     private void Update()
     {
+        if (!touchPress || !touchPosition || !secondaryTouchPress || !secondaryTouchPosition || ignorePrimaryTouch || Time.timeScale == 0f) return;
         if (!AreTwoFingersTouching())
         {
             if (touchPress.action.IsPressed())
@@ -100,8 +103,7 @@ public class MobileInputController : MonoBehaviour
             Pinch?.Invoke(currentDistance - previousDistance);
         }
         else if (!primaryMoved &&
-                 Mathf.Abs(secondaryMovement.x) > rotationMovementThreshold &&
-                 Mathf.Abs(secondaryMovement.x) > Mathf.Abs(secondaryMovement.y))
+                 Mathf.Abs(secondaryMovement.x) > rotationMovementThreshold)
         {
             Rotate?.Invoke(secondaryMovement.x);
         }
@@ -114,7 +116,7 @@ public class MobileInputController : MonoBehaviour
     {
         touchStartPosition = touchPosition.action.ReadValue<Vector2>();
         previousTouchPosition = touchStartPosition;
-        ignorePrimaryTouch = IsJoystickTouch(touchStartPosition);
+        ignorePrimaryTouch = Time.timeScale == 0f || IsJoystickTouch(touchStartPosition);
 
         if (ignorePrimaryTouch)
         {
@@ -134,7 +136,7 @@ public class MobileInputController : MonoBehaviour
 
     private void OnTouchMoved(InputAction.CallbackContext context)
     {
-        if (ignorePrimaryTouch || AreTwoFingersTouching())
+        if (ignorePrimaryTouch || !touchPress.action.IsPressed() || Time.timeScale == 0f || AreTwoFingersTouching())
             return;
 
         Vector2 currentPosition = context.ReadValue<Vector2>();
@@ -153,6 +155,13 @@ public class MobileInputController : MonoBehaviour
 
     private void OnTouchEnded(InputAction.CallbackContext context)
     {
+        if (context.control == null || !context.control.device.added)
+        {
+            ignorePrimaryTouch = false;
+            twoFingerGestureInProgress = false;
+            PrimaryTouchEnded?.Invoke();
+            return;
+        }
         if (ignorePrimaryTouch)
         {
             ignorePrimaryTouch = false;
@@ -204,9 +213,11 @@ public class MobileInputController : MonoBehaviour
 
     private bool IsJoystickTouch(Vector2 position)
     {
-        float edgeSize = Mathf.Min(Screen.width, Screen.height) * 0.35f;
-        return position.y <= edgeSize &&
-               (position.x <= edgeSize || position.x >= Screen.width - edgeSize);
+        // All menu/card/joystick touches must be excluded from model gestures.
+        if (EventSystem.current == null) return false;
+        var hits = new List<RaycastResult>();
+        EventSystem.current.RaycastAll(new PointerEventData(EventSystem.current) { position = position }, hits);
+        return hits.Count > 0;
     }
 
     private void CheckForDoubleTap(Vector2 tapPosition)

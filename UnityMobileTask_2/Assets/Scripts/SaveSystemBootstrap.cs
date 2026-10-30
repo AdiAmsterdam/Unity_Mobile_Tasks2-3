@@ -13,6 +13,7 @@ public static class SaveSystemBootstrap
         systems.AddComponent<GameManager>();
         systems.AddComponent<SaveSystem>();
         systems.AddComponent<SaveMenuController>();
+        systems.AddComponent<ItemSelectionScreen>();
     }
 }
 
